@@ -9,18 +9,22 @@ import (
 	"github.com/shester1kov/myproxy/internal/lb"
 )
 
+// структура для прокси
 type Proxy struct {
 	lb *lb.RoundRobin
 }
 
+// конструктор, возвращает структуру прокси
 func NewProxy(lb *lb.RoundRobin) *Proxy {
 	return &Proxy{
 		lb: lb,
 	}
 }
 
+// обработчик запросов, перенаправляет входящий запрос на другой сервер
 func (p *Proxy) Handler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		//получаем адрес сервера из балансировщика нагрузки
 		targetAddr, err := p.lb.GetNext()
 		if err != nil {
 			log.Printf("Ошибка получения сервера: %v\n", err)
@@ -37,6 +41,7 @@ func (p *Proxy) Handler() http.HandlerFunc {
 			return
 		}
 
+		// создаем новый прокси с полученным адресом
 		proxy := httputil.NewSingleHostReverseProxy(targetURL)
 		proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
 			log.Printf("Ошибка проксирования на %s: %v\n", targetAddr, err)
